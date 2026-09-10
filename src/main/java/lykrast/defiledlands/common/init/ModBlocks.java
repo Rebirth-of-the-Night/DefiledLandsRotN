@@ -121,7 +121,7 @@ public class ModBlocks {
 	public static Block registerBlock(Block block, String name, CreativeTabs tab)
 	{
 		block.setRegistryName(name);
-		block.setUnlocalizedName(LocUtils.prefix(name));
+		block.setTranslationKey(LocUtils.prefix(name));
 		
 		ItemBlock item;
 		if (block instanceof ICustomItemBlock)

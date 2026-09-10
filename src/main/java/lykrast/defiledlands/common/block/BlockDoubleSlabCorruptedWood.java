@@ -22,8 +22,14 @@ public class BlockDoubleSlabCorruptedWood extends BlockSlabCorruptedWood {
     {
         return BlockFaceShape.SOLID;
     }
-    
-	public ItemBlock getItemBlock()
+
+    @Override
+    public String getTranslationKey(int meta) {
+        return super.getTranslationKey();
+    }
+
+
+    public ItemBlock getItemBlock()
 	{
 		return null;
 	}

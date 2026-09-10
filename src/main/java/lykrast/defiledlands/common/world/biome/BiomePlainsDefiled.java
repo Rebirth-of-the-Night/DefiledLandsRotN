@@ -8,7 +8,7 @@ public class BiomePlainsDefiled extends BiomeDefiled {
 	public static Biome.BiomeProperties properties = new Biome.BiomeProperties("Defiled Plains");
 
     static {
-        properties.setTemperature(Biomes.PLAINS.getTemperature());
+        properties.setTemperature(Biomes.PLAINS.getDefaultTemperature());
         properties.setRainfall(Biomes.PLAINS.getRainfall());
         properties.setBaseHeight(Biomes.PLAINS.getBaseHeight());
         properties.setHeightVariation(Biomes.PLAINS.getHeightVariation());

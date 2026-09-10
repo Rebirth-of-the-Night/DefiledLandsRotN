@@ -21,7 +21,7 @@ public class ItemAxeGeneric extends ItemAxe {
 	
 	@Override
 	public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
-		String k = getUnlocalizedName(stack) + ".tooltip";
+		String k = getTranslationKey(stack) + ".tooltip";
 		if (I18n.hasKey(k))
 			tooltip.addAll(LocUtils.getTooltips(TextFormatting.GRAY.toString() + I18n.format(k)));
 	}

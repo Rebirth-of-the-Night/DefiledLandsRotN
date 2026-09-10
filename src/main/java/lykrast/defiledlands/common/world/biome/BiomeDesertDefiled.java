@@ -9,7 +9,7 @@ public class BiomeDesertDefiled extends BiomeDefiled {
 	public static Biome.BiomeProperties properties = new Biome.BiomeProperties("Defiled Desert");
 
     static {
-        properties.setTemperature(Biomes.DESERT.getTemperature());
+        properties.setTemperature(Biomes.DESERT.getDefaultTemperature());
         properties.setRainfall(Biomes.DESERT.getRainfall());
         properties.setBaseHeight(Biomes.DESERT.getBaseHeight());
         properties.setHeightVariation(Biomes.DESERT.getHeightVariation());

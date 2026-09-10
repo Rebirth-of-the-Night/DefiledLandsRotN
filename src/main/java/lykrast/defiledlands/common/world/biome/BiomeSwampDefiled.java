@@ -8,7 +8,7 @@ public class BiomeSwampDefiled extends BiomeDefiled {
 	public static Biome.BiomeProperties properties = new Biome.BiomeProperties("Defiled Swamp");
 
     static {
-        properties.setTemperature(Biomes.SWAMPLAND.getTemperature());
+        properties.setTemperature(Biomes.SWAMPLAND.getDefaultTemperature());
         properties.setRainfall(Biomes.SWAMPLAND.getRainfall());
         properties.setBaseHeight(Biomes.SWAMPLAND.getBaseHeight());
         properties.setHeightVariation(Biomes.SWAMPLAND.getHeightVariation());

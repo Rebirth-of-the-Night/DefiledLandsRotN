@@ -41,10 +41,10 @@ public class ItemBlockMetadata extends ItemBlock {
 	}
 
 	@Override
-	public String getUnlocalizedName(ItemStack itemStack)
+	public String getTranslationKey(ItemStack itemStack)
 	{
-		if (differentNames) return super.getUnlocalizedName(itemStack) + "." + variants[itemStack.getMetadata()];
-		else return super.getUnlocalizedName(itemStack);
+		if (differentNames) return super.getTranslationKey(itemStack) + "." + variants[itemStack.getMetadata()];
+		else return super.getTranslationKey(itemStack);
 	}
 
 }

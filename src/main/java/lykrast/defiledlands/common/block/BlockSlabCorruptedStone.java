@@ -54,9 +54,9 @@ public abstract class BlockSlabCorruptedStone extends BlockSlabCorrupted impleme
     /**
      * Returns the slab block name with the type associated with it
      */
-    public String getUnlocalizedName(int meta)
+    public String getTranslationKey(int meta)
     {
-        return super.getUnlocalizedName() + "." + Variant.values()[meta].getName();
+        return super.getTranslationKey() + "." + Variant.values()[meta].getName();
     }
 
     public IProperty<?> getVariantProperty()

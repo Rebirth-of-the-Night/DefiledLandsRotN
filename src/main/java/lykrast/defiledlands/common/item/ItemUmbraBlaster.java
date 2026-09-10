@@ -56,7 +56,7 @@ public class ItemUmbraBlaster extends ItemGun implements IEnchantDestructive {
             	else projectile = new EntityBlastemFruit(worldIn, playerIn);
             	
             	float f = getSharpshooterBonus(itemstack);
-                projectile.setHeadingFromThrower(playerIn, playerIn.rotationPitch, playerIn.rotationYaw, 0.0F, 1.5F * f, 1.0F / f);
+                projectile.shoot(playerIn, playerIn.rotationPitch, playerIn.rotationYaw, 0.0F, 1.5F * f, 1.0F / f);
                 
                 if (EnchantmentHelper.getEnchantmentLevel(ModEnchantments.safeguard, itemstack) > 0)
                 {

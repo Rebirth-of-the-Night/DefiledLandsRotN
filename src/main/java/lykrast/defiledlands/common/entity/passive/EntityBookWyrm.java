@@ -9,6 +9,7 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Predicates;
 import com.google.common.collect.Sets;
 
 import io.netty.buffer.ByteBuf;
@@ -39,6 +40,7 @@ import net.minecraft.entity.ai.EntityAISwimming;
 import net.minecraft.entity.ai.EntityAITempt;
 import net.minecraft.entity.ai.EntityAIWanderAvoidWater;
 import net.minecraft.entity.ai.EntityAIWatchClosest;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.passive.EntityAnimal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
@@ -50,18 +52,15 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
-import net.minecraft.util.DamageSource;
-import net.minecraft.util.EnumHand;
-import net.minecraft.util.EnumParticleTypes;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.SoundEvent;
+import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
-
+//I'm Booking It
 public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEntityAdditionalSpawnData {
     public static final ResourceLocation LOOT = new ResourceLocation(DefiledLands.MODID, "entities/bookwyrm/normal");
     public static final ResourceLocation LOOT_GOLDEN = new ResourceLocation(DefiledLands.MODID, "entities/bookwyrm/golden");
@@ -69,25 +68,24 @@ public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEnt
     private static final DataParameter<Boolean> GOLDEN = EntityDataManager.<Boolean>createKey(EntityBookWyrm.class, DataSerializers.BOOLEAN);
     private static final DataParameter<Integer> DIGEST_TIME = EntityDataManager.<Integer>createKey(EntityBookWyrm.class, DataSerializers.VARINT);
     private static final DataParameter<Integer> MAX_LEVEL = EntityDataManager.<Integer>createKey(EntityBookWyrm.class, DataSerializers.VARINT);
+    private static final DataParameter<Boolean> THROW_ITEM_PLAYER = EntityDataManager.createKey(EntityBookWyrm.class, DataSerializers.BOOLEAN);
     public int digested, digesting, digestTimer;
-	
-	public EntityBookWyrm(World worldIn)
-	{
-		super(worldIn);
+
+    public EntityBookWyrm(World worldIn) {
+        super(worldIn);
         this.setSize(0.9F, 0.9F);
         this.spawnableBlock = ModBlocks.grassDefiled;
-	}
+    }
 
-    protected void entityInit()
-    {
+    protected void entityInit() {
         super.entityInit();
         this.dataManager.register(GOLDEN, Boolean.valueOf(false));
         this.dataManager.register(DIGEST_TIME, Integer.valueOf(200));
         this.dataManager.register(MAX_LEVEL, Integer.valueOf(3));
+        this.dataManager.register(THROW_ITEM_PLAYER, Boolean.valueOf(false));
     }
 
-    protected void initEntityAI()
-    {
+    protected void initEntityAI() {
         this.tasks.addTask(0, new EntityAISwimming(this));
         this.tasks.addTask(1, new AIPanic(1.2D));
         this.tasks.addTask(2, new EntityAILeapAtTarget(this, 0.4F));
@@ -100,231 +98,174 @@ public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEnt
         this.tasks.addTask(9, new EntityAILookIdle(this));
         this.targetTasks.addTask(1, new AIHurtByTarget());
     }
-    
-    protected void applyEntityAttributes()
-    {
+
+    protected void applyEntityAttributes() {
         super.applyEntityAttributes();
         this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(12.0D);
         this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.26D);
     }
-    
-    public boolean attackEntityAsMob(Entity entityIn)
-    {
-    	return entityIn.attackEntityFrom(DamageSource.causeMobDamage(this), 5.0F);
+
+    public boolean attackEntityAsMob(Entity entityIn) {
+        return entityIn.attackEntityFrom(DamageSource.causeMobDamage(this), 5.0F);
     }
-    
-    protected void updateAITasks()
-    {
-    	if (world.getDifficulty() == EnumDifficulty.PEACEFUL)
-    	{
-        	if (this.getAttackTarget() != null) this.setAttackTarget(null);
-        	if (this.getRevengeTarget() != null) this.setRevengeTarget(null);
-    	}
-    	
-    	super.updateAITasks();
+
+    protected void updateAITasks() {
+        if (world.getDifficulty() == EnumDifficulty.PEACEFUL) {
+            if (this.getAttackTarget() != null) this.setAttackTarget(null);
+            if (this.getRevengeTarget() != null) this.setRevengeTarget(null);
+        }
+
+        super.updateAITasks();
     }
 
     /**
      * Called frequently so the entity can update its state every tick as required. For example, zombies and skeletons
      * use this to react to sunlight and start to burn.
      */
-    public void onLivingUpdate()
-    {
+    public void onLivingUpdate() {
         super.onLivingUpdate();
-        
-        if (digesting > 0 && digestTimer > 0)
-        {
-        	digestTimer--;
-        	
-        	if (world.isRemote)
-        	{
-            	double d0 = this.rand.nextGaussian() * 0.02D;
-            	double d1 = this.rand.nextGaussian() * 0.02D;
-            	double d2 = this.rand.nextGaussian() * 0.02D;
-            	world.spawnParticle(EnumParticleTypes.ENCHANTMENT_TABLE, 
-            			posX + (double)(rand.nextFloat() * width * 2.0F) - (double)width, 
-            			posY + 0.25D + (double)(rand.nextFloat() * height), 
-            			posZ + (double)(rand.nextFloat() * width * 2.0F) - (double)width, 
-            			d0, d1, d2);
-        	}
-        	
-        	if (digestTimer <= 0)
-        	{
-        		digested++;
-        		digesting--;
-        		
-        		playDigestEffect(false);
-        		
-        		if (digesting > 0) digestTimer = getDigestTime();
-        	}
-        }
-    	
-    	if (digested >= getMaxLevel())
-    	{
-    		//Spawn the books
-    		digested -= getMaxLevel();
-            playSound(SoundEvents.ENTITY_CHICKEN_EGG, 1.0F, (this.rand.nextFloat() - this.rand.nextFloat()) * 0.2F + 1.0F);
-            playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.0F, 1.0F);
-    		playDigestEffect(true);
-    		
-    		if (!world.isRemote)
-    		{
-    	        List<EnchantmentData> list = EnchantmentHelper.buildEnchantmentList(rand, new ItemStack(Items.BOOK), getMaxLevel(), isGolden());
-    			
-    	        if (!list.isEmpty())
-    	        {
-    	        	//Sort by descending digested value
-    	        	Collections.sort(list, Comparator.comparingInt((e) -> -e.enchantment.getMinEnchantability(e.enchantmentLevel)));
-    	        	//Make sure that whatever books it gives back, it'll never exceed the enchantment level
-    	        	//To prevent endless loops
-    	        	int remaining = (int)(getMaxLevel() / Config.conversionRate);
-					for (EnchantmentData e : list)
-					{
-						int value = (int) (e.enchantment.getMinEnchantability(e.enchantmentLevel) * Config.conversionRate);
-						if (remaining >= value)
-						{
-							remaining -= value;
-							ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
-							ItemEnchantedBook.addEnchantment(book, e);
-							entityDropItem(book, 0.5F);
-							
-							if (remaining <= 0) break;
-						}
-					}
-    	        }
-    		}
-    	}
-    }
-
-    public boolean processInteract(EntityPlayer player, EnumHand hand)
-    {
-        if (!super.processInteract(player, hand))
-        {
-            ItemStack itemstack = player.getHeldItem(hand);
-            
-            if (itemstack.getItem() == Items.ENCHANTED_BOOK && !isChild())
-            {
-            	Map<Enchantment, Integer> list = EnchantmentHelper.getEnchantments(itemstack);
-            	
-            	if (list.isEmpty()) return false;
-            	
-            	int i = 0;
-            	
-            	for (Entry<Enchantment, Integer> e : list.entrySet())
-            	{
-            		i += e.getKey().getMinEnchantability(e.getValue());
-            	}
-            	
-            	i = (int)(i * Config.conversionRate);
-            	
-            	if (i > 0)
-            	{
-            		digesting += i;
-            		if (digestTimer == 0) digestTimer = getDigestTime();
-                	
-                    if (!player.capabilities.isCreativeMode)
-                    {
-                        itemstack.shrink(1);
-                    }
-
-                    this.playSound(SoundEvents.ENTITY_PLAYER_BURP, 1.0F, this.rand.nextFloat() * 0.1F + 0.9F);
-                    
-                	return true;
-            	}
-            	
-            	return false;
-            }
-            else
-            {
-            	return false;
+        traderCooldown--;
+        if(!world.isRemote) {
+            selectedPlayer = this.world.getClosestPlayer(this.posX, this.posY, this.posZ, 5, Predicates.and(EntitySelectors.NOT_SPECTATING, EntitySelectors.notRiding(this)));
+            //allows trading
+            if(selectedPlayer != null && traderCooldown < 0) {
+                //disables the player trading if they get out of trading distance
+                ItemStack playerStack = selectedPlayer.getHeldItemMainhand();
+                Vec3d playerPos = selectedPlayer.getPositionVector();
+                this.getLookHelper().setLookPosition(playerPos.x, playerPos.y + selectedPlayer.getEyeHeight(), playerPos.z, 30, 30);
             }
         }
-        else
-        {
-            return true;
-        }
     }
 
-    protected void playDigestEffect(boolean success)
-    {
-    	if (!world.isRemote) return;
-    	
-        EnumParticleTypes enumparticletypes = EnumParticleTypes.SMOKE_NORMAL;
-        
-        if (success) enumparticletypes = EnumParticleTypes.VILLAGER_HAPPY;
-        
-        for (int i = 0; i < 7; ++i)
-        {
-            double d0 = this.rand.nextGaussian() * 0.02D;
-            double d1 = this.rand.nextGaussian() * 0.02D;
-            double d2 = this.rand.nextGaussian() * 0.02D;
-            this.world.spawnParticle(enumparticletypes, this.posX + (double)(this.rand.nextFloat() * this.width * 2.0F) - (double)this.width, this.posY + 0.5D + (double)(this.rand.nextFloat() * this.height), this.posZ + (double)(this.rand.nextFloat() * this.width * 2.0F) - (double)this.width, d0, d1, d2);
+
+    private EntityPlayer selectedPlayer = null;
+    private int traderCooldown = 0;
+
+    public boolean processInteract(EntityPlayer player, EnumHand hand) {
+        ItemStack stack = player.getHeldItem(hand);
+        if (!world.isRemote && selectedPlayer != null && !this.isThrowItemPlayer() && traderCooldown < 0) {
+            if (stack.getItem() == Items.DIAMOND) {
+                stack.shrink(1);
+                this.throwItemAfterTrade(new ItemStack(Items.DIAMOND_AXE, 1), selectedPlayer);
+            }
         }
+        return super.processInteract(player, hand);
     }
+
+    private void setThrowItemPlayer(boolean value) {this.dataManager.set(THROW_ITEM_PLAYER, Boolean.valueOf(value));}
+    private boolean isThrowItemPlayer() {return this.dataManager.get(THROW_ITEM_PLAYER);}
+
+    public static Vec3d yVec(double heightAboveGround) {
+        return new Vec3d(0, heightAboveGround, 0);
+    }
+
+    public Vec3d getRelativeOffset(EntityLivingBase actor, Vec3d offset) {
+        Vec3d look = getVectorForRotation(0, actor.renderYawOffset);
+        Vec3d side = look.rotateYaw((float) Math.PI * 0.5f);
+        return look.scale(offset.x).add(yVec((float) offset.y)).add(side.scale(offset.z));
+    }
+
+    public void shoot(Entity entityIn, double x, double y, double z, float velocity, float inaccuracy)
+    {
+        float f = MathHelper.sqrt(x * x + y * y + z * z);
+        x = x / (double)f;
+        y = y / (double)f;
+        z = z / (double)f;
+        x = x + this.rand.nextGaussian() * 0.007499999832361937D * (double)inaccuracy;
+        y = y + this.rand.nextGaussian() * 0.007499999832361937D * (double)inaccuracy;
+        z = z + this.rand.nextGaussian() * 0.007499999832361937D * (double)inaccuracy;
+        x = x * (double)velocity;
+        y = y * (double)velocity;
+        z = z * (double)velocity;
+        entityIn.motionX = x;
+        entityIn.motionY = y;
+        entityIn.motionZ = z;
+        float f1 = MathHelper.sqrt(x * x + z * z);
+        entityIn.rotationYaw = (float)(MathHelper.atan2(x, z) * (180D / Math.PI));
+        entityIn.rotationPitch = (float)(MathHelper.atan2(y, (double)f1) * (180D / Math.PI));
+        entityIn.prevRotationYaw = entityIn.rotationYaw;
+        entityIn.prevRotationPitch = entityIn.rotationPitch;
+    }
+
+
+
+    private void throwItemAfterTrade(ItemStack stack, EntityPlayer player) {
+        this.setThrowItemPlayer(true);
+            //throws item in hand too player
+            EntityItem itemToThrow = new EntityItem(world, this.posX, this.posY + this.getEyeHeight() - 0.1, this.posZ, stack);
+            traderCooldown = 20;
+            Vec3d lookScale = player.getPositionVector();
+            Vec3d relPos = this.getPositionVector().add(getRelativeOffset(this, new Vec3d(1, 1.6, 0)));
+            double d0 = lookScale.y + (double)player.getEyeHeight() - 1.100000023841858D;
+            double d1 = lookScale.x - relPos.x;
+            double d2 = d0 - this.posY;
+            double d3 = lookScale.z - relPos.z;
+            float f = MathHelper.sqrt(d1 * d1 + d3 * d3);
+            this.shoot(itemToThrow, d1, d2 + (double)(f * 0.1F), d3, 0.3F, 1.0F);
+            itemToThrow.velocityChanged = true;
+            // itemToThrow.addVelocity(lookScale.x, lookScale.y, lookScale.z);
+            world.spawnEntity(itemToThrow);
+    }
+
+
 
     /**
      * Called only once on an entity when first time spawned, via egg, mob spawner, natural spawning etc, but not called
      * when entity is reloaded from nbt. Mainly used for initializing attributes and inventory
      */
     @Nullable
-    public IEntityLivingData onInitialSpawn(DifficultyInstance difficulty, @Nullable IEntityLivingData livingdata)
-    {
+    public IEntityLivingData onInitialSpawn(DifficultyInstance difficulty, @Nullable IEntityLivingData livingdata) {
         livingdata = super.onInitialSpawn(difficulty, livingdata);
-        
+
         setGolden(world.rand.nextInt(100) == 0);
         setDigestTime(MathHelper.getInt(rand, 160, 240));
         setMaxLevel(MathHelper.getInt(rand, 3, 6));
 
-        if (this.rand.nextInt(5) == 0)
-        {
+        if (this.rand.nextInt(5) == 0) {
             this.setGrowingAge(-24000);
         }
-        
+
         return livingdata;
     }
 
-	@Override
-	public EntityAgeable createChild(EntityAgeable ageable) {
-		EntityBookWyrm child = new EntityBookWyrm(world);
-		
-		if (ageable instanceof EntityBookWyrm) setOffspringAttributes((EntityBookWyrm)ageable, child);
-		
-		return child;
-	}
-	
-	protected void setOffspringAttributes(EntityBookWyrm parent, EntityBookWyrm child)
-	{
-		//Golden
-		boolean flag1 = isGolden();
-		boolean flag2 = parent.isGolden();
-		
-		if (flag1 || flag2)
-		{
-			int i = 25;
-			if (flag1 && flag2) i = 10;
-			
-			child.setGolden(rand.nextInt(i) == 0);
-		}
-		else child.setGolden(rand.nextInt(100) == 0);
-		
-		//Digest time
-		int j1 = getDigestTime();
-		int j2 = parent.getDigestTime();
-		int k = j1 + j2 - rand.nextInt((int)(Math.max(j1, j2) + 1 * 0.75));
-		child.setDigestTime(k / 2);
-		
-		//Maximum level
-		j1 = getMaxLevel();
-		j2 = parent.getMaxLevel();
-		k = j1 + j2 + rand.nextInt(Math.max(j1, j2) + 1);
-		child.setMaxLevel(Math.min(k / 2, 30));
-	}
+    @Override
+    public EntityAgeable createChild(EntityAgeable ageable) {
+        EntityBookWyrm child = new EntityBookWyrm(world);
+
+        if (ageable instanceof EntityBookWyrm) setOffspringAttributes((EntityBookWyrm) ageable, child);
+
+        return child;
+    }
+
+    protected void setOffspringAttributes(EntityBookWyrm parent, EntityBookWyrm child) {
+        //Golden
+        boolean flag1 = isGolden();
+        boolean flag2 = parent.isGolden();
+
+        if (flag1 || flag2) {
+            int i = 25;
+            if (flag1 && flag2) i = 10;
+
+            child.setGolden(rand.nextInt(i) == 0);
+        } else child.setGolden(rand.nextInt(100) == 0);
+
+        //Digest time
+        int j1 = getDigestTime();
+        int j2 = parent.getDigestTime();
+        int k = j1 + j2 - rand.nextInt((int) (Math.max(j1, j2) + 1 * 0.75));
+        child.setDigestTime(k / 2);
+
+        //Maximum level
+        j1 = getMaxLevel();
+        j2 = parent.getMaxLevel();
+        k = j1 + j2 + rand.nextInt(Math.max(j1, j2) + 1);
+        child.setMaxLevel(Math.min(k / 2, 30));
+    }
 
     /**
      * (abstract) Protected helper method to write subclass entity data to NBT.
      */
-    public void writeEntityToNBT(NBTTagCompound compound)
-    {
+    public void writeEntityToNBT(NBTTagCompound compound) {
         super.writeEntityToNBT(compound);
         compound.setBoolean("Golden", this.isGolden());
         compound.setInteger("Digest", this.getDigestTime());
@@ -337,8 +278,7 @@ public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEnt
     /**
      * (abstract) Protected helper method to read subclass entity data from NBT.
      */
-    public void readEntityFromNBT(NBTTagCompound compound)
-    {
+    public void readEntityFromNBT(NBTTagCompound compound) {
         super.readEntityFromNBT(compound);
         setGolden(compound.getBoolean("Golden"));
         setDigestTime(compound.getInteger("Digest"));
@@ -348,65 +288,61 @@ public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEnt
         digestTimer = compound.getInteger("DigestTimer");
     }
 
-	@Override
-	public void writeSpawnData(ByteBuf buffer) {
-		buffer.writeInt(digested);
-		buffer.writeInt(digesting);
-		buffer.writeInt(digestTimer);
-	}
+    @Override
+    public void writeSpawnData(ByteBuf buffer) {
+        buffer.writeInt(digested);
+        buffer.writeInt(digesting);
+        buffer.writeInt(digestTimer);
+    }
 
-	@Override
-	public void readSpawnData(ByteBuf additionalData) {
-		digested = additionalData.readInt();
-		digesting = additionalData.readInt();
-		digestTimer = additionalData.readInt();
-	}
+    @Override
+    public void readSpawnData(ByteBuf additionalData) {
+        digested = additionalData.readInt();
+        digesting = additionalData.readInt();
+        digestTimer = additionalData.readInt();
+    }
 
-    protected SoundEvent getAmbientSound()
-    {
+    protected SoundEvent getAmbientSound() {
         return ModSounds.bookWyrmIdle;
     }
 
-    protected SoundEvent getHurtSound(DamageSource p_184601_1_)
-    {
+    protected SoundEvent getHurtSound(DamageSource p_184601_1_) {
         return ModSounds.bookWyrmHurt;
     }
 
-    protected SoundEvent getDeathSound()
-    {
+    protected SoundEvent getDeathSound() {
         return ModSounds.bookWyrmDeath;
     }
 
-    protected void playStepSound(BlockPos pos, Block blockIn)
-    {
+    protected void playStepSound(BlockPos pos, Block blockIn) {
         this.playSound(SoundEvents.ENTITY_PIG_STEP, 0.15F, 1.0F);
     }
 
     public boolean isGolden() {
-		return dataManager.get(GOLDEN);
-	}
+        return dataManager.get(GOLDEN);
+    }
 
-	public void setGolden(boolean golden) {
-		dataManager.set(GOLDEN, golden);
-	}
+    public void setGolden(boolean golden) {
+        dataManager.set(GOLDEN, golden);
+    }
 
-	public int getDigestTime() {
-		return dataManager.get(DIGEST_TIME);
-	}
+    public int getDigestTime() {
+        return dataManager.get(DIGEST_TIME);
+    }
 
-	public void setDigestTime(int digest) {
+    public void setDigestTime(int digest) {
         dataManager.set(DIGEST_TIME, Math.max(digest, 1));
-	}
+    }
 
-	public int getMaxLevel() {
-		return dataManager.get(MAX_LEVEL);
-	}
+    public int getMaxLevel() {
+        return dataManager.get(MAX_LEVEL);
+    }
 
-	public void setMaxLevel(int maxLevel) {
+    public void setMaxLevel(int maxLevel) {
         dataManager.set(MAX_LEVEL, Math.max(maxLevel, 1));
-	}
+    }
 
-	@Override
+    @Override
     @Nullable
     protected ResourceLocation getLootTable() {
         if (isGolden()) return LOOT_GOLDEN;
@@ -417,64 +353,52 @@ public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEnt
      * Checks if the parameter is an item which this animal can be fed to breed it (wheat, carrots or seeds depending on
      * the animal type)
      */
-    public boolean isBreedingItem(ItemStack stack)
-    {
+    public boolean isBreedingItem(ItemStack stack) {
         return stack.getItem() == ModItems.foulCandy;
     }
 
     //-------------------------
     //Borrowed from polar bears
     //-------------------------
-    class AIHurtByTarget extends EntityAIHurtByTarget
-    {
-        public AIHurtByTarget()
-        {
+    class AIHurtByTarget extends EntityAIHurtByTarget {
+        public AIHurtByTarget() {
             super(EntityBookWyrm.this, true);
         }
 
         /**
          * Execute a one shot task or start executing a continuous task
          */
-        public void startExecuting()
-        {
+        public void startExecuting() {
             super.startExecuting();
 
-            if (EntityBookWyrm.this.isChild())
-            {
+            if (EntityBookWyrm.this.isChild()) {
                 this.alertOthers();
                 this.resetTask();
             }
         }
 
-        protected void setEntityAttackTarget(EntityCreature creatureIn, EntityLivingBase entityLivingBaseIn)
-        {
-            if (creatureIn instanceof EntityBookWyrm && !creatureIn.isChild())
-            {
+        protected void setEntityAttackTarget(EntityCreature creatureIn, EntityLivingBase entityLivingBaseIn) {
+            if (creatureIn instanceof EntityBookWyrm && !creatureIn.isChild()) {
                 super.setEntityAttackTarget(creatureIn, entityLivingBaseIn);
             }
         }
 
-        public boolean shouldExecute()
-        {
-        	if (this.taskOwner.world.getDifficulty() == EnumDifficulty.PEACEFUL) return false;
-        	else return super.shouldExecute();
+        public boolean shouldExecute() {
+            if (this.taskOwner.world.getDifficulty() == EnumDifficulty.PEACEFUL) return false;
+            else return super.shouldExecute();
         }
     }
 
-    class AIPanic extends EntityAIPanic
-    {
-        public AIPanic(double speed)
-        {
+    class AIPanic extends EntityAIPanic {
+        public AIPanic(double speed) {
             super(EntityBookWyrm.this, speed);
         }
 
         /**
          * Returns whether the EntityAIBase should begin execution.
          */
-        public boolean shouldExecute()
-        {
+        public boolean shouldExecute() {
             return !EntityBookWyrm.this.isChild() && !EntityBookWyrm.this.isBurning() ? false : super.shouldExecute();
         }
     }
-
 }

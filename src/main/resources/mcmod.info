@@ -1,13 +1,13 @@
 [
 {
   "modid": "defiledlands",
-  "name": "Defiled Lands",
+  "name": "Defiled Lands: RotN Edition",
   "description": "Adds defiled lands, akin to Terraria's corruption.",
   "version": "${version}",
   "mcversion": "${mcversion}",
   "url": "",
   "updateUrl": "",
-  "authorList": ["Lykrast"],
+  "authorList": ["Lykrast, ProvidenceDaemon"],
   "credits": "Rhodox for making the Painterly Pack and allowing me to use textures from it",
   "logoFile": "",
   "screenshots": [],

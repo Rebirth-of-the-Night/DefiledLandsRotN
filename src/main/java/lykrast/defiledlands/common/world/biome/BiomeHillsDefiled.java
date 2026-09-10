@@ -13,7 +13,7 @@ public class BiomeHillsDefiled extends BiomeDefiled {
 	public static Biome.BiomeProperties properties = new Biome.BiomeProperties("Defiled Hills");
 
     static {
-        properties.setTemperature(Biomes.EXTREME_HILLS.getTemperature());
+        properties.setTemperature(Biomes.EXTREME_HILLS.getDefaultTemperature());
         properties.setRainfall(Biomes.EXTREME_HILLS.getRainfall());
         properties.setBaseHeight(Biomes.EXTREME_HILLS.getBaseHeight());
         properties.setHeightVariation(Biomes.EXTREME_HILLS.getHeightVariation());

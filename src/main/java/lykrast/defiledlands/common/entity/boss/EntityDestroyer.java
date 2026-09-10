@@ -395,7 +395,7 @@ public class EntityDestroyer extends EntityMob implements IEntityDefiled {
             if (leapTarget == null || !leaper.onGround || leaper.isInWater()) return false;
             else
             {
-                double d0 = this.leaper.getDistanceSqToEntity(this.leapTarget);
+                double d0 = this.leaper.getDistanceSq(this.leapTarget);
 
                 if (d0 >= 16.0D && d0 <= 1024.0D && leaper.getRNG().nextInt(7) == 0) return true;
                 else return false;

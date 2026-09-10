@@ -506,7 +506,7 @@ public class EntityMourner extends EntityMob implements IEntityDefiled {
         public boolean shouldExecute()
         {
             return mourner.getAttackTarget() != null && mourner.getAttackTarget().isEntityAlive()
-            		&& mourner.getDistanceSqToEntity(mourner.getAttackTarget()) <= 16.0D;
+            		&& mourner.getDistanceSq(mourner.getAttackTarget()) <= 16.0D;
         }
 
         /**
@@ -515,7 +515,7 @@ public class EntityMourner extends EntityMob implements IEntityDefiled {
         public boolean shouldContinueExecuting()
         {
             return mourner.getMoveHelper().isUpdating() && mourner.isCharging() && mourner.getAttackTarget() != null && mourner.getAttackTarget().isEntityAlive()
-            		&& mourner.getDistanceSqToEntity(mourner.getAttackTarget()) <= 25.0D;
+            		&& mourner.getDistanceSq(mourner.getAttackTarget()) <= 25.0D;
         }
 
         /**
@@ -622,7 +622,7 @@ public class EntityMourner extends EntityMob implements IEntityDefiled {
                 attackTime = 3;
             	switch (mourner.getCurrentAttack()) {
             	case ATTACK_FIREBALLS:
-                    double d0 = mourner.getDistanceSqToEntity(entitylivingbase);
+                    double d0 = mourner.getDistanceSq(entitylivingbase);
                 	double d1 = entitylivingbase.posX - mourner.posX;
                     double d2 = entitylivingbase.getEntityBoundingBox().minY + (entitylivingbase.height / 2.0) - (mourner.posY + (mourner.height / 2.0));
                     double d3 = entitylivingbase.posZ - mourner.posZ;
@@ -758,7 +758,7 @@ public class EntityMourner extends EntityMob implements IEntityDefiled {
 
             if (this instanceof EntityCreature)
             {
-                ((EntityCreature)this).getNavigator().clearPathEntity();
+                ((EntityCreature)this).getNavigator().clearPath();
             }
 
             return true;

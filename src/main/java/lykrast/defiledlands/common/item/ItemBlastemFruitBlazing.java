@@ -35,7 +35,7 @@ public class ItemBlastemFruitBlazing extends ItemBlastemFruit {
         if (!worldIn.isRemote)
         {
             EntityBlastemFruitBlazing projectile = new EntityBlastemFruitBlazing(worldIn, playerIn);
-            projectile.setHeadingFromThrower(playerIn, playerIn.rotationPitch, playerIn.rotationYaw, 0.0F, 1.5F, 1.0F);
+            projectile.shoot(playerIn, playerIn.rotationPitch, playerIn.rotationYaw, 0.0F, 1.5F, 1.0F);
             projectile.setFire(100);
             worldIn.spawnEntity(projectile);
         }

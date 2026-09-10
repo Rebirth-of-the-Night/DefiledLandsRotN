@@ -1,5 +1,4 @@
 package lykrast.defiledlands.common.compat;
-
 import lykrast.defiledlands.common.block.BlockGrassCorrupted;
 import lykrast.defiledlands.common.init.ModBlocks;
 import lykrast.defiledlands.common.init.ModItems;

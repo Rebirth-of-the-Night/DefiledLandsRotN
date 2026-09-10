@@ -16,7 +16,7 @@ public abstract class ModCompat {
 	static
 	{
 		compat.put("chisel", CompatChisel.class);
-		compat.put("projecte", CompatProjectE.class);
+		//compat.put("projecte", CompatProjectE.class);
 		compat.put("immersiveengineering", CompatImmersiveEngineering.class);
 		compat.put("tconstruct", CompatTinkersConstruct.class);
 	}

@@ -44,7 +44,7 @@ public class ItemBlastemFruit extends Item {
         if (!worldIn.isRemote)
         {
             EntityBlastemFruit projectile = new EntityBlastemFruit(worldIn, playerIn);
-            projectile.setHeadingFromThrower(playerIn, playerIn.rotationPitch, playerIn.rotationYaw, 0.0F, 1.5F, 1.0F);
+            projectile.shoot(playerIn, playerIn.rotationPitch, playerIn.rotationYaw, 0.0F, 1.5F, 1.0F);
             worldIn.spawnEntity(projectile);
         }
 
@@ -54,7 +54,7 @@ public class ItemBlastemFruit extends Item {
 	
 	@Override
 	public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
-		tooltip.addAll(LocUtils.getTooltips(TextFormatting.GRAY.toString() + I18n.format(super.getUnlocalizedName(stack) + ".tooltip")));
+		tooltip.addAll(LocUtils.getTooltips(TextFormatting.GRAY.toString() + I18n.format(super.getTranslationKey(stack) + ".tooltip")));
 	}
 
 }

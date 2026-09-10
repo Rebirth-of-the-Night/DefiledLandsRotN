@@ -134,7 +134,7 @@ public class EntityAIAttackMeleeStrafe extends EntityAIBase {
             this.attacker.setAttackTarget((EntityLivingBase)null);
         }
 
-        this.attacker.getNavigator().clearPathEntity();
+        this.attacker.getNavigator().clearPath();
     }
 
     /**

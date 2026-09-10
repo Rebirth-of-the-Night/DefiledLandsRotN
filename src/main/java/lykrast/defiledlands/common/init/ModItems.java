@@ -215,7 +215,7 @@ public class ModItems {
 	public static Item registerItem(Item item, String name, CreativeTabs tab)
 	{
         item.setRegistryName(name);
-		item.setUnlocalizedName(LocUtils.prefix(name));
+		item.setTranslationKey(LocUtils.prefix(name));
         
         if (tab != null) item.setCreativeTab(tab);
         
