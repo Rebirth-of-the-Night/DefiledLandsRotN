@@ -1,15 +1,11 @@
 package lykrast.defiledlands.common.entity.passive;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
+import java.util.*;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Predicates;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import io.netty.buffer.ByteBuf;
@@ -20,9 +16,6 @@ import lykrast.defiledlands.common.init.ModSounds;
 import lykrast.defiledlands.common.util.Config;
 import lykrast.defiledlands.core.DefiledLands;
 import net.minecraft.block.Block;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentData;
-import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityAgeable;
 import net.minecraft.entity.EntityCreature;
@@ -46,7 +39,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemEnchantedBook;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.datasync.DataParameter;
@@ -59,17 +51,25 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.storage.loot.LootContext;
 import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
+import static net.minecraft.item.Item.getByNameOrId;
+
+
 //I'm Booking It
 public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEntityAdditionalSpawnData {
     public static final ResourceLocation LOOT = new ResourceLocation(DefiledLands.MODID, "entities/bookwyrm/normal");
     public static final ResourceLocation LOOT_GOLDEN = new ResourceLocation(DefiledLands.MODID, "entities/bookwyrm/golden");
+    private static final ResourceLocation TRADES = new ResourceLocation(DefiledLands.MODID, "misc/normal_trades");
+    private static final ResourceLocation GOLDEN_TRADES = new ResourceLocation(DefiledLands.MODID, "misc/golden_trades");
     private static final Set<Item> TEMPTATION_ITEMS = Sets.newHashSet(Items.ENCHANTED_BOOK, ModItems.foulCandy);
     private static final DataParameter<Boolean> GOLDEN = EntityDataManager.<Boolean>createKey(EntityBookWyrm.class, DataSerializers.BOOLEAN);
-    private static final DataParameter<Integer> DIGEST_TIME = EntityDataManager.<Integer>createKey(EntityBookWyrm.class, DataSerializers.VARINT);
-    private static final DataParameter<Integer> MAX_LEVEL = EntityDataManager.<Integer>createKey(EntityBookWyrm.class, DataSerializers.VARINT);
     private static final DataParameter<Boolean> THROW_ITEM_PLAYER = EntityDataManager.createKey(EntityBookWyrm.class, DataSerializers.BOOLEAN);
-    public int digested, digesting, digestTimer;
+
+    private EntityPlayer selectedPlayer = null;
+    private int traderCooldown = 0;
+    private long lootTableSeed;
 
     public EntityBookWyrm(World worldIn) {
         super(worldIn);
@@ -80,8 +80,6 @@ public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEnt
     protected void entityInit() {
         super.entityInit();
         this.dataManager.register(GOLDEN, Boolean.valueOf(false));
-        this.dataManager.register(DIGEST_TIME, Integer.valueOf(200));
-        this.dataManager.register(MAX_LEVEL, Integer.valueOf(3));
         this.dataManager.register(THROW_ITEM_PLAYER, Boolean.valueOf(false));
     }
 
@@ -137,16 +135,19 @@ public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEnt
         }
     }
 
-
-    private EntityPlayer selectedPlayer = null;
-    private int traderCooldown = 0;
-
     public boolean processInteract(EntityPlayer player, EnumHand hand) {
         ItemStack stack = player.getHeldItem(hand);
         if (!world.isRemote && selectedPlayer != null && !this.isThrowItemPlayer() && traderCooldown < 0) {
-            if (stack.getItem() == Items.DIAMOND) {
+            boolean checkItem = false;
+            for(String s : Config.bookWyrmCurrency){
+                if(getByNameOrId(s).equals(stack.getItem())) {
+                    checkItem = true;
+                    break;
+                }
+            }
+            if (checkItem) {
                 stack.shrink(1);
-                this.throwItemAfterTrade(new ItemStack(Items.DIAMOND_AXE, 1), selectedPlayer);
+                this.throwItemAfterTrade(getTradeTable(), selectedPlayer);
             }
         }
         return super.processInteract(player, hand);
@@ -191,22 +192,44 @@ public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEnt
 
     private void throwItemAfterTrade(ItemStack stack, EntityPlayer player) {
         this.setThrowItemPlayer(true);
-            //throws item in hand too player
-            EntityItem itemToThrow = new EntityItem(world, this.posX, this.posY + this.getEyeHeight() - 0.1, this.posZ, stack);
-            traderCooldown = 20;
-            Vec3d lookScale = player.getPositionVector();
-            Vec3d relPos = this.getPositionVector().add(getRelativeOffset(this, new Vec3d(1, 1.6, 0)));
-            double d0 = lookScale.y + (double)player.getEyeHeight() - 1.100000023841858D;
-            double d1 = lookScale.x - relPos.x;
-            double d2 = d0 - this.posY;
-            double d3 = lookScale.z - relPos.z;
-            float f = MathHelper.sqrt(d1 * d1 + d3 * d3);
-            this.shoot(itemToThrow, d1, d2 + (double)(f * 0.1F), d3, 0.3F, 1.0F);
-            itemToThrow.velocityChanged = true;
-            // itemToThrow.addVelocity(lookScale.x, lookScale.y, lookScale.z);
-            world.spawnEntity(itemToThrow);
+        //throws item in hand too player
+        EntityItem itemToThrow = new EntityItem(world, this.posX, this.posY + this.getEyeHeight() - 0.1, this.posZ, stack);
+        Vec3d lookScale = player.getPositionVector();
+        Vec3d relPos = this.getPositionVector().add(getRelativeOffset(this, new Vec3d(1, 1.6, 0)));
+        double d0 = lookScale.y + (double)player.getEyeHeight() - 1.100000023841858D;
+        double d1 = lookScale.x - relPos.x;
+        double d2 = d0 - this.posY;
+        double d3 = lookScale.z - relPos.z;
+        float f = MathHelper.sqrt(d1 * d1 + d3 * d3);
+        this.shoot(itemToThrow, d1, d2 + (double)(f * 0.1F), d3, 0.3F, 1.0F);
+        itemToThrow.velocityChanged = true;
+        // itemToThrow.addVelocity(lookScale.x, lookScale.y, lookScale.z);
+        world.spawnEntity(itemToThrow);
+        traderCooldown = 20;
+        this.setThrowItemPlayer(false);
     }
 
+    private List<ItemStack> trade_items = Lists.newArrayList();
+    private List<ItemStack> golden_trade_items = Lists.newArrayList();
+
+    protected ItemStack getTradeTable() {
+        if(!world.isRemote) {
+            LootContext.Builder lootcontext$builder = (new LootContext.Builder((WorldServer) this.world)).withLootedEntity(this);
+            if(this.isGolden()){
+                golden_trade_items = this.world.getLootTableManager().getLootTableFromLocation(GOLDEN_TRADES).generateLootForPools(this.lootTableSeed == 0 ? new Random() :new Random(this.lootTableSeed), lootcontext$builder.build());
+                for (ItemStack item : golden_trade_items) {
+                    return item;
+                }
+            }
+            else{
+                trade_items = this.world.getLootTableManager().getLootTableFromLocation(TRADES).generateLootForPools(this.lootTableSeed == 0 ? new Random() :new Random(this.lootTableSeed), lootcontext$builder.build());
+                for (ItemStack item : trade_items) {
+                    return item;
+                }
+            }
+        }
+        return ItemStack.EMPTY;
+    }
 
 
     /**
@@ -218,8 +241,6 @@ public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEnt
         livingdata = super.onInitialSpawn(difficulty, livingdata);
 
         setGolden(world.rand.nextInt(100) == 0);
-        setDigestTime(MathHelper.getInt(rand, 160, 240));
-        setMaxLevel(MathHelper.getInt(rand, 3, 6));
 
         if (this.rand.nextInt(5) == 0) {
             this.setGrowingAge(-24000);
@@ -248,18 +269,6 @@ public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEnt
 
             child.setGolden(rand.nextInt(i) == 0);
         } else child.setGolden(rand.nextInt(100) == 0);
-
-        //Digest time
-        int j1 = getDigestTime();
-        int j2 = parent.getDigestTime();
-        int k = j1 + j2 - rand.nextInt((int) (Math.max(j1, j2) + 1 * 0.75));
-        child.setDigestTime(k / 2);
-
-        //Maximum level
-        j1 = getMaxLevel();
-        j2 = parent.getMaxLevel();
-        k = j1 + j2 + rand.nextInt(Math.max(j1, j2) + 1);
-        child.setMaxLevel(Math.min(k / 2, 30));
     }
 
     /**
@@ -268,11 +277,8 @@ public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEnt
     public void writeEntityToNBT(NBTTagCompound compound) {
         super.writeEntityToNBT(compound);
         compound.setBoolean("Golden", this.isGolden());
-        compound.setInteger("Digest", this.getDigestTime());
-        compound.setInteger("MaxLvl", this.getMaxLevel());
-        compound.setInteger("Digested", this.digested);
-        compound.setInteger("Digesting", this.digesting);
-        compound.setInteger("DigestTimer", this.digestTimer);
+        compound.setLong("Table_Seed", lootTableSeed);
+        compound.setBoolean("Throw_Item", this.isThrowItemPlayer());
     }
 
     /**
@@ -281,25 +287,18 @@ public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEnt
     public void readEntityFromNBT(NBTTagCompound compound) {
         super.readEntityFromNBT(compound);
         setGolden(compound.getBoolean("Golden"));
-        setDigestTime(compound.getInteger("Digest"));
-        setMaxLevel(compound.getInteger("MaxLvl"));
-        digested = compound.getInteger("Digested");
-        digesting = compound.getInteger("Digesting");
-        digestTimer = compound.getInteger("DigestTimer");
+        this.setThrowItemPlayer(compound.getBoolean("Throw_Item"));
+        this.lootTableSeed = compound.getLong("Table_Seed");
     }
 
     @Override
     public void writeSpawnData(ByteBuf buffer) {
-        buffer.writeInt(digested);
-        buffer.writeInt(digesting);
-        buffer.writeInt(digestTimer);
+
     }
 
     @Override
     public void readSpawnData(ByteBuf additionalData) {
-        digested = additionalData.readInt();
-        digesting = additionalData.readInt();
-        digestTimer = additionalData.readInt();
+
     }
 
     protected SoundEvent getAmbientSound() {
@@ -324,22 +323,6 @@ public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEnt
 
     public void setGolden(boolean golden) {
         dataManager.set(GOLDEN, golden);
-    }
-
-    public int getDigestTime() {
-        return dataManager.get(DIGEST_TIME);
-    }
-
-    public void setDigestTime(int digest) {
-        dataManager.set(DIGEST_TIME, Math.max(digest, 1));
-    }
-
-    public int getMaxLevel() {
-        return dataManager.get(MAX_LEVEL);
-    }
-
-    public void setMaxLevel(int maxLevel) {
-        dataManager.set(MAX_LEVEL, Math.max(maxLevel, 1));
     }
 
     @Override

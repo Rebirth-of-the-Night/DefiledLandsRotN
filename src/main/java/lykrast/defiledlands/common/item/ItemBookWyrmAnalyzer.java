@@ -39,11 +39,6 @@ public class ItemBookWyrmAnalyzer extends Item {
         	
         	String base = "ui.defiledlands.book_wyrm_analyze.";
         	player.sendMessage(new TextComponentTranslation(base + "health", (int)target.getHealth(), (int)target.getMaxHealth()));
-        	player.sendMessage(new TextComponentTranslation(base + "digest_time", target.getDigestTime()));
-        	player.sendMessage(new TextComponentTranslation(base + "max_level", target.getMaxLevel()));
-        	player.sendMessage(new TextComponentTranslation(base + "digested", target.digested));
-        	if (target.digesting > 0)
-            	player.sendMessage(new TextComponentTranslation(base + "digesting", target.digesting));
         	if (target.isChild())
         	{
         		int minutes = (int)Math.ceil((-target.getGrowingAge()) / 1200.0D);

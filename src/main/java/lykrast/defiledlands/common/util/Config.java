@@ -7,6 +7,7 @@ import lykrast.defiledlands.common.compat.ModCompat;
 import lykrast.defiledlands.core.CommonProxy;
 import lykrast.defiledlands.core.DefiledLands;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.oredict.OreDictionary;
 
 public class Config {
 	private static final String CATEGORY_GENERAL = "General";
@@ -24,7 +25,7 @@ public class Config {
 	
 	// Book Wyrms
 	public static boolean bookWyrmSpawn;
-	public static float conversionRate;
+	public static String[] bookWyrmCurrency;
 	
 	// World
 	public static int weightDesertDefiled, weightPlainsDefiled, weightForestTenebra, weightForestVilespine, weightHillsDefiled, weightSwampDefiled, weightIcePlainsDefiled;
@@ -72,8 +73,8 @@ public class Config {
         // Book Wyrms
         bookWyrmSpawn = cfg.getBoolean("bookWyrmSpawn", CATEGORY_BOOK_WYRM, true, 
         		"Can Book Wyrms naturally spawn");
-        conversionRate = cfg.getFloat("conversionRate", CATEGORY_BOOK_WYRM, 1.0F, 0.01F, 10.0F, 
-        		"Multiplier applied to enchanted books's level fed to Book Wyrms, highly recommended to keep below 1");
+        bookWyrmCurrency = cfg.getStringList("bookWyrmCurrency", CATEGORY_BOOK_WYRM, new String[]{"minecraft:book", "minecraft:enchanted_book"},
+        		"A list of items that book wyrms will take as trades");
         
         // World
         weightDesertDefiled = cfg.getInt("weightDesertDefiled", CATEGORY_WORLD, 3, 0, 100, 
