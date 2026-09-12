@@ -117,8 +117,8 @@ public class EntityBookWyrm extends EntityAnimal implements IEntityDefiled, IEnt
     }
 
     /**
-     * Called frequently so the entity can update its state every tick as required. For example, zombies and skeletons
-     * use this to react to sunlight and start to burn.
+     * Trading code (added in commits ae1abd6 and 775804c)
+     * adapted from https://github.com/Jboymercs/bomd/blob/main/src/main/java/com/dungeon_additions/da/entity/trader/EntityMysteriousTrader.java
      */
     public void onLivingUpdate() {
         super.onLivingUpdate();
