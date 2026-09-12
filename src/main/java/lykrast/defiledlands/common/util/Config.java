@@ -28,7 +28,7 @@ public class Config {
 	public static String[] bookWyrmCurrency;
 	
 	// World
-	public static int weightDesertDefiled, weightPlainsDefiled, weightForestTenebra, weightForestVilespine, weightHillsDefiled, weightSwampDefiled, weightIcePlainsDefiled;
+	public static int weightDesertDefiled, weightPlainsDefiled, weightForestTenebra, weightForestVilespine, weightHillsDefiled, weightSwampDefiled, weightIcePlainsDefiled, altarGenChance;
 	
 	// Compat
 	public static HashMap<String, Boolean> compatEnabled = new HashMap<String, Boolean>();
@@ -91,8 +91,10 @@ public class Config {
         		"Weight of Defiled Swamps in generation with greater weight meaning more common, 10 is most vanilla biomes, 0 prevents generation");
         weightIcePlainsDefiled = cfg.getInt("weightIcePlainsDefiled", CATEGORY_WORLD, 3, 0, 100, 
         		"Weight of Defiled Ice Plains in generation with greater weight meaning more common, 10 is most vanilla biomes, 0 prevents generation");
-        
-        // Compat
+		altarGenChance = cfg.getInt("altarGenChance", CATEGORY_WORLD, 50, 1, 2100000,
+				"Weight of Defiled Ice Plains in generation with greater weight meaning more common, 10 is most vanilla biomes, 0 prevents generation");
+
+		// Compat
         for(Entry<String, Class<? extends ModCompat>> e : ModCompat.compat.entrySet())
 		{
         	compatEnabled.put(e.getKey(), cfg.getBoolean(e.getKey(), CATEGORY_COMPAT, true, "Enables compatibility with " + e.getKey()));

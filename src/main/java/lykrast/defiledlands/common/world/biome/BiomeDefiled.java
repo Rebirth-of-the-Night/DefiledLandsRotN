@@ -52,7 +52,6 @@ public abstract class BiomeDefiled extends Biome {
 		
 		if (Config.bookWyrmSpawn)
 			spawnableCreatureList.add(new Biome.SpawnListEntry(EntityBookWyrm.class, 16, 2, 4));
-		
 		if (Config.weightShambler > 0)
 			spawnableMonsterList.add(new Biome.SpawnListEntry(EntityShambler.class, Config.weightShambler, 1, 2));
 		if (Config.weightTwistedShambler > 0)
@@ -94,7 +93,7 @@ public abstract class BiomeDefiled extends Biome {
 		super.decorate(worldIn, rand, pos);
 
         if(net.minecraftforge.event.terraingen.TerrainGen.decorate(worldIn, rand, pos, net.minecraftforge.event.terraingen.DecorateBiomeEvent.Decorate.EventType.DESERT_WELL))
-        if (worldIn.getChunk(pos).getRandomWithSeed(119432789L).nextInt(50) == 0)
+        if (worldIn.getChunk(pos).getRandomWithSeed(119432789L).nextInt(Config.altarGenChance) == 0)
         {
             int i = rand.nextInt(16) + 8;
             int j = rand.nextInt(16) + 8;
